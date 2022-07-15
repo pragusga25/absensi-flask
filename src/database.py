@@ -1,7 +1,7 @@
 from sqlalchemy.dialects.postgresql import UUID
 from flask_sqlalchemy import SQLAlchemy
 import uuid
-import datetime
+from datetime import datetime
 import enum
 
 db = SQLAlchemy()
