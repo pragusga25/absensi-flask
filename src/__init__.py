@@ -1,6 +1,7 @@
 from flask import Flask
 import os
 from .auth.views import auth
+from .common.views import common
 from .activities.views import activities
 from .attendances.views import attendances
 from .auth.models import TokenBlocklist
@@ -35,6 +36,7 @@ def create_app(test_config=None):
 
     Migrate(app, db)
 
+    app.register_blueprint(common)
     app.register_blueprint(auth)
     app.register_blueprint(activities)
     app.register_blueprint(attendances)
