@@ -12,6 +12,7 @@ from src.constants.http_status_codes import (
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
+    get_jwt_identity,
     jwt_required,
 )
 from src.database import User, db
@@ -24,10 +25,11 @@ def register():
     try:
         email = request.json.get("email")
         password = request.json.get("password")
+        name = request.json.get("name")
 
-        if email is None or password is None:
+        if email is None or password is None or name is None:
             return (
-                jsonify({"message": "Missing email or password."}),
+                jsonify({"message": "Missing email, password or name"}),
                 HTTP_400_BAD_REQUEST,
             )
 
@@ -52,7 +54,7 @@ def register():
             )
 
         hashed_password = generate_password_hash(password)
-        user = User(email=email, password=hashed_password)
+        user = User(email=email, password=hashed_password, name=name)
         db.session.add(user)
         db.session.commit()
 
@@ -60,7 +62,7 @@ def register():
             jsonify({"message": "User created.", "user": {"email": email}}),
             HTTP_201_CREATED,
         )
-    except:
+    except Exception as e:
         return (
             jsonify({"message": "Something went wrong."}),
             HTTP_500_INTERNAL_SERVER_ERROR,
@@ -84,7 +86,9 @@ def login():
         if user:
             is_password_correct = check_password_hash(user.password, password)
             if is_password_correct:
-                identity = {"uid": user.id, "is_checkin": False}
+                identity = {
+                    "uid": user.id,
+                }
                 refresh_token = create_refresh_token(identity=identity)
                 access_token = create_access_token(identity=identity)
 
@@ -113,7 +117,32 @@ def login():
         )
 
 
+@auth.post("/token/refresh")
+@jwt_required(refresh=True)
+def refresh_token():
+    identity = get_jwt_identity()
+    access_token = create_access_token(identity=identity)
+    return (
+        jsonify({"message": "Token refreshed.", "access_token": access_token}),
+        HTTP_200_OK,
+    )
+
+
 @auth.get("/me")
 @jwt_required()
 def me():
-    return "User authenticated"
+    identity = get_jwt_identity()
+    uid = identity.get("uid")
+    user = User.query.filter_by(id=uid).first()
+    return (
+        jsonify(
+            {
+                "message": "User found.",
+                "user": {
+                    "email": user.email,
+                    "name": user.name,
+                },
+            }
+        ),
+        HTTP_200_OK,
+    )

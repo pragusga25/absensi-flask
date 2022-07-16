@@ -2,6 +2,7 @@ from flask import Flask
 import os
 from src.auth import auth
 from src.activities import activities
+from src.attendances import attendances
 from src.database import db
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
@@ -28,5 +29,6 @@ def create_app(test_config=None):
 
     app.register_blueprint(auth)
     app.register_blueprint(activities)
+    app.register_blueprint(attendances)
 
     return app

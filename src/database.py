@@ -15,9 +15,11 @@ class AttendanceType(enum.Enum):
 class User(db.Model):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = db.Column(db.String(120), unique=True, nullable=False)
+    name = db.Column(db.String(150), nullable=False)
     password = db.Column(db.String(120), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     updated_at = db.Column(db.DateTime, onupdate=datetime.now())
+    is_checkin = db.Column(db.Boolean, nullable=False, default=False)
     activities = db.relationship("Activity", backref="user")
     attendances = db.relationship("Attendance", backref="user")
 
@@ -41,7 +43,7 @@ class Activity(db.Model):
 class Attendance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
-    attendance_type = db.Column(
+    type = db.Column(
         db.Enum(AttendanceType),
         nullable=False,
         default=AttendanceType.CHECK_IN,
