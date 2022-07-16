@@ -19,7 +19,6 @@ activities = Blueprint("activities", __name__, url_prefix="/api/v1/activities")
 @jwt_required()
 def get_activities():
     try:
-
         args = request.args
         from_date = args.get("from")
         to_date = args.get("to")
@@ -94,6 +93,96 @@ def create_activities():
             HTTP_201_CREATED,
         )
 
+    except:
+        return (
+            jsonify({"message": "Something went wrong"}),
+            HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@activities.patch("/<int:id>")
+@jwt_required()
+def update_activities(id):
+    try:
+        identity = get_jwt_identity()
+        uid = identity.get("uid")
+
+        user = User.query.filter_by(id=uid).first()
+        if not user.is_checkin:
+            return (
+                jsonify({"message": "You have to check in first."}),
+                HTTP_403_FORBIDDEN,
+            )
+
+        activity = Activity.query.filter_by(id=id, user_id=uid).first()
+        if activity is None:
+            return (
+                jsonify({"message": "Activity not found."}),
+                HTTP_400_BAD_REQUEST,
+            )
+
+        name = request.json.get("name")
+        if name is None:
+            return (
+                jsonify({"message": "Please provide a name."}),
+                HTTP_400_BAD_REQUEST,
+            )
+
+        activity.name = name
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "message": "Activity updated successfully",
+                    "activity": {
+                        "id": activity.id,
+                        "name": activity.name,
+                        "time": activity.created_at,
+                    },
+                }
+            ),
+            HTTP_200_OK,
+        )
+    except:
+        return (
+            jsonify({"message": "Something went wrong"}),
+            HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@activities.delete("/<int:id>")
+@jwt_required()
+def delete_activities(id):
+    try:
+        identity = get_jwt_identity()
+        uid = identity.get("uid")
+
+        user = User.query.filter_by(id=uid).first()
+        if not user.is_checkin:
+            return (
+                jsonify({"message": "You have to check in first."}),
+                HTTP_403_FORBIDDEN,
+            )
+
+        activity = Activity.query.filter_by(id=id, user_id=uid).first()
+        if activity is None:
+            return (
+                jsonify({"message": "Activity not found."}),
+                HTTP_400_BAD_REQUEST,
+            )
+
+        db.session.delete(activity)
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "message": "Activity deleted successfully",
+                }
+            ),
+            HTTP_200_OK,
+        )
     except:
         return (
             jsonify({"message": "Something went wrong"}),

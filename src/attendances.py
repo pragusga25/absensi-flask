@@ -26,7 +26,7 @@ def get_attendances():
     for attendance in attendances_db:
         data = {
             "id": attendance.id,
-            "type": attendance.attendance_type.name,
+            "type": attendance.type.name,
             "time": attendance.created_at,
         }
         attendances.append(data)

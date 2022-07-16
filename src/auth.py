@@ -12,10 +12,11 @@ from src.constants.http_status_codes import (
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
+    get_jwt,
     get_jwt_identity,
     jwt_required,
 )
-from src.database import User, db
+from src.database import TokenBlocklist, User, db
 
 auth = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
@@ -126,6 +127,33 @@ def refresh_token():
         jsonify({"message": "Token refreshed.", "access_token": access_token}),
         HTTP_200_OK,
     )
+
+
+@auth.route("/logout", methods=["DELETE"])
+@jwt_required(verify_type=False)
+def modify_token():
+    try:
+        identity = get_jwt_identity()
+        uid = identity.get("uid")
+
+        token = get_jwt()
+        jti = token["jti"]
+        ttype = token["type"]
+
+        db.session.add(TokenBlocklist(jti=jti, type=ttype, user_id=uid))
+        db.session.commit()
+
+        return (
+            jsonify(
+                {"msg": f"{ttype.capitalize()} token successfully revoked"}
+            ),
+            HTTP_200_OK,
+        )
+    except:
+        return (
+            jsonify({"message": "Something went wrong."}),
+            HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 @auth.get("/me")

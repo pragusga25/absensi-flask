@@ -3,7 +3,7 @@ import os
 from src.auth import auth
 from src.activities import activities
 from src.attendances import attendances
-from src.database import db
+from src.database import TokenBlocklist, db
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 
@@ -24,7 +24,14 @@ def create_app(test_config=None):
     db.app = app
     db.init_app(app)
 
-    JWTManager(app)
+    jwt = JWTManager(app)
+
+    @jwt.token_in_blocklist_loader
+    def check_if_token_revoked(jwt_header, jwt_payload: dict) -> bool:
+        jti = jwt_payload["jti"]
+        token = db.session.query(TokenBlocklist.id).filter_by(jti=jti).scalar()
+        return token is not None
+
     Migrate(app, db)
 
     app.register_blueprint(auth)
