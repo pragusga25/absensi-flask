@@ -17,9 +17,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
-    updated_at = db.Column(
-        db.DateTime, nullable=False, onupdate=datetime.now()
-    )
+    updated_at = db.Column(db.DateTime, onupdate=datetime.now())
     activities = db.relationship("Activity", backref="user")
     attendances = db.relationship("Attendance", backref="user")
 
@@ -31,9 +29,7 @@ class Activity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
-    updated_at = db.Column(
-        db.DateTime, nullable=False, onupdate=datetime.now()
-    )
+    updated_at = db.Column(db.DateTime, onupdate=datetime.now())
     user_id = db.Column(
         UUID(as_uuid=True), db.ForeignKey("user.id"), nullable=False
     )
