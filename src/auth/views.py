@@ -16,7 +16,7 @@ from flask_jwt_extended import (
     get_jwt_identity,
     jwt_required,
 )
-from src.database import TokenBlocklist, User, db
+from .models import TokenBlocklist, User, db
 
 auth = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
@@ -60,10 +60,16 @@ def register():
         db.session.commit()
 
         return (
-            jsonify({"message": "User created.", "user": {"email": email}}),
+            jsonify(
+                {
+                    "message": "User created.",
+                    "user": {"email": email, "name": name},
+                }
+            ),
             HTTP_201_CREATED,
         )
     except Exception as e:
+        print(e)
         return (
             jsonify({"message": "Something went wrong."}),
             HTTP_500_INTERNAL_SERVER_ERROR,

@@ -1,9 +1,10 @@
 from flask import Flask
 import os
-from src.auth import auth
-from src.activities import activities
-from src.attendances import attendances
-from src.database import TokenBlocklist, db
+from .auth.views import auth
+from .activities.views import activities
+from .attendances.views import attendances
+from .auth.models import TokenBlocklist
+from .shared.database import db
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 

@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import (
     get_jwt_identity,
@@ -10,7 +11,8 @@ from src.constants.http_status_codes import (
     HTTP_403_FORBIDDEN,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
-from src.database import Activity, User, db
+from .models import Activity, db
+from src.auth.models import User
 
 activities = Blueprint("activities", __name__, url_prefix="/api/v1/activities")
 
@@ -26,28 +28,27 @@ def get_activities():
         identity = get_jwt_identity()
         uid = identity.get("uid")
 
-        activities_db = None
+        activities_db = Activity.query.filter_by(user_id=uid)
 
         if from_date is not None and to_date is not None:
-            activities_db = (
-                Activity.query.filter_by(user_id=uid)
-                .filter(Activity.created_at.between(from_date, to_date))
-                .all()
-            )
+            activities_db = activities_db.filter(
+                Activity.time.between(from_date, to_date)
+            ).all()
         else:
-            activities_db = Activity.query.filter_by(user_id=uid).all()
+            activities_db = activities_db.all()
 
         activities = []
         for activity in activities_db:
             data = {
                 "id": activity.id,
                 "name": activity.name,
-                "time": activity.created_at,
+                "time": activity.time,
             }
             activities.append(data)
 
         return jsonify({"activities": activities}), HTTP_200_OK
-    except:
+    except Exception as e:
+        print(e)
         return (
             jsonify({"message": "Something went wrong"}),
             HTTP_500_INTERNAL_SERVER_ERROR,
@@ -69,13 +70,17 @@ def create_activities():
             )
 
         name = request.json.get("name")
+        time = request.json.get("time")
         if name is None:
             return (
                 jsonify({"message": "Please provide a name."}),
                 HTTP_400_BAD_REQUEST,
             )
 
-        activity = Activity(user_id=uid, name=name)
+        if time is None:
+            time = datetime.now()
+
+        activity = Activity(user_id=uid, name=name, time=time)
         db.session.add(activity)
         db.session.commit()
 
@@ -86,14 +91,15 @@ def create_activities():
                     "activity": {
                         "id": activity.id,
                         "name": activity.name,
-                        "time": activity.created_at,
+                        "time": activity.time,
                     },
                 }
             ),
             HTTP_201_CREATED,
         )
 
-    except:
+    except Exception as e:
+        print(e)
         return (
             jsonify({"message": "Something went wrong"}),
             HTTP_500_INTERNAL_SERVER_ERROR,
@@ -122,13 +128,21 @@ def update_activities(id):
             )
 
         name = request.json.get("name")
-        if name is None:
+        time = request.json.get("time")
+
+        if time is None and name is None:
             return (
-                jsonify({"message": "Please provide a name."}),
+                jsonify({"message": "Please provide a name or time."}),
                 HTTP_400_BAD_REQUEST,
             )
 
-        activity.name = name
+        if name is None:
+            name = activity.name
+
+        if time is None:
+            time = activity.time
+
+        activity.update(name=name, time=time)
         db.session.commit()
 
         return (
@@ -138,7 +152,7 @@ def update_activities(id):
                     "activity": {
                         "id": activity.id,
                         "name": activity.name,
-                        "time": activity.created_at,
+                        "time": activity.time,
                     },
                 }
             ),

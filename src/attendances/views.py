@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify
 from flask_jwt_extended import (
     get_jwt_identity,
     jwt_required,
@@ -7,7 +7,8 @@ from src.constants.http_status_codes import (
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
 )
-from src.database import Attendance, AttendanceType, User, db
+from .models import Attendance, AttendanceType, db
+from src.auth.models import User
 
 attendances = Blueprint(
     "attendances", __name__, url_prefix="/api/v1/attendances"
