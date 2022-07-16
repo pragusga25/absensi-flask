@@ -2,10 +2,17 @@ from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 import validators
 from src.constants.http_status_codes import (
+    HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
     HTTP_409_CONFLICT,
     HTTP_500_INTERNAL_SERVER_ERROR,
+)
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    jwt_required,
 )
 from src.database import User, db
 
@@ -60,6 +67,53 @@ def register():
         )
 
 
+@auth.post("/login")
+def login():
+    try:
+        email = request.json.get("email")
+        password = request.json.get("password")
+
+        if email is None or password is None:
+            return (
+                jsonify({"message": "Missing email or password."}),
+                HTTP_400_BAD_REQUEST,
+            )
+
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            is_password_correct = check_password_hash(user.password, password)
+            if is_password_correct:
+                identity = {"uid": user.id, "is_checkin": False}
+                refresh_token = create_refresh_token(identity=identity)
+                access_token = create_access_token(identity=identity)
+
+                return (
+                    jsonify(
+                        {
+                            "message": "Login successful.",
+                            "user": {
+                                "email": user.email,
+                                "refresh_token": refresh_token,
+                                "access_token": access_token,
+                            },
+                        }
+                    ),
+                    HTTP_200_OK,
+                )
+
+        return (
+            jsonify({"message": "Wrong credentials."}),
+            HTTP_401_UNAUTHORIZED,
+        )
+    except:
+        return (
+            jsonify({"message": "Something went wrong."}),
+            HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
 @auth.get("/me")
+@jwt_required()
 def me():
     return "User authenticated"
